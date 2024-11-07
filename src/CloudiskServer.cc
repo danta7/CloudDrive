@@ -527,9 +527,17 @@ void CloudiskServer::loadFileUploadWork(bool isValid, const HttpReq *req, HttpRe
         usrData->fileHsh =  filehash;
         usrData->contentsize = content.size() ;
         series->set_context(usrData);
-
-        auto fileWriteTask = WFTaskFactory::create_pwrite_task(fd,content.data(),content.size(),0,std::bind(&CloudiskServer::pwriteTaskCB,this,std::placeholders::_1,resp,fd));
-        series->push_back(fileWriteTask);
+       
+        const size_t chunkSize = 1024*1024;
+        size_t offset = 0;
+        while (offset < content.size())
+        {
+            size_t writeSize = std::min(chunkSize,content.size() - offset);
+            auto fileWriteTask = WFTaskFactory::create_pwrite_task(fd, content.data() + offset, writeSize, offset,std::bind(&CloudiskServer::pwriteTaskCB, this, std::placeholders::_1, resp, fd));
+            series->push_back(fileWriteTask);
+            offset += writeSize;
+        }
+        
   
     }
 }
