@@ -288,6 +288,11 @@ void CloudiskServer::loginMysqlCB(WFMySQLTask *mysqltask, HttpResp *resp)
         // 判断数据库中的密文和用户传进来的密文是否一样
         vector<vector<protocol::MySQLCell>> matrix;
         cursor.fetch_all(matrix);
+        if(matrix.empty())
+        {
+            resp->String("Login Failed");
+            return;
+        }
         string salt = matrix[0][0].as_string();
         string pwd_m = matrix[0][1].as_string();
         auto user_data = static_cast<UserData *>(series_of(mysqltask)->get_context());
@@ -324,6 +329,8 @@ void CloudiskServer::loginMysqlCB(WFMySQLTask *mysqltask, HttpResp *resp)
         else
         {
             resp->String("Login Failed");
+            delete user_data;
+            return;
         }
         delete user_data;
     }
